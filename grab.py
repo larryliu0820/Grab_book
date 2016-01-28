@@ -14,8 +14,11 @@ from selenium.webdriver.support import expected_conditions as EC
 
 def print_current_page(driver, print_btn):
     print_btn.click()
-    for handle in driver.window_handles:
-        driver.switch_to_window(handle)
+
+    handles = driver.window_handles
+    for handle in handles:
+        if handle != driver.current_window_handle:
+            driver.switch_to_window(handle)
         if driver.find_element_by_xpath("/html").get_attribute('id') == 'print-preview':
             break
 
@@ -99,12 +102,12 @@ def main():
 
     part_ids = get_part_ids(url)
 
+    driver = get_driver()
     # header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
     # request = urllib2.Request(url + part_ids[0], headers=header)
     # part_page = urllib2.urlopen(request)
     print ("Going to Part 1: \n" + url + part_ids[0])
 
-    driver = get_driver()
     # print part_soup.prettify()
     chapter_ids = get_chapter_ids(driver, url + part_ids[0])
 
@@ -112,15 +115,20 @@ def main():
     #     print id
 
     # get all id for Parts
+    # for i in range(len(chapter_ids)):
+    for i in range(0,2):
+        driver.get(base_url + chapter_ids[i])
+        print ("Going to Part 1 Chapter %i : \n" % i + base_url + chapter_ids[i])
 
-    driver.get(base_url + chapter_ids[0])
-    print ("Going to Part 1 Chapter 1: \n" + base_url + chapter_ids[0])
+        sign_in(driver)
 
-    sign_in(driver)
+        # Print chapter
+        print_btn = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "printTool"))
+        )
 
-    # Print chapter
-    print_btn = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.ID, "printTool"))
-    )
+        print_current_page(driver, print_btn)
 
-    print_current_page(driver, print_btn)
+
+if __name__ == "__main__":
+    main()
