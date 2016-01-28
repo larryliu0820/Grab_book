@@ -1,5 +1,8 @@
 import urllib2
 from BeautifulSoup import BeautifulSoup
+import os
+import stat
+import zipfile
 import re
 import selenium
 from selenium.webdriver.common.keys import Keys
@@ -21,9 +24,26 @@ part_ids = [link.get('href') for link in soup.findAll('a', attrs={'class': "topL
 # part_page = urllib2.urlopen(request)
 print ("Going to Part 1: \n" + url + part_ids[0])
 
-chrome_driver = '/Users/larryliu/chromedriver'
-# download_url = "http://chromedriver.storage.googleapis.com/2.20/chromedriver_mac32.zip"
-driver = selenium.webdriver.Chrome(chrome_driver)
+download_url = "http://chromedriver.storage.googleapis.com/2.20/chromedriver_mac32.zip"
+directory = '/tmp/'
+filename = 'chromedriver_mac32.zip'
+if os.environ['PATH'].find('chromedriver') is -1 and not os.path.isfile(directory + 'chromedriver'):
+    f = urllib2.urlopen(download_url)
+    data = f.read()
+    with open(directory + filename, "wb") as code:
+        code.write(data)
+    z = zipfile.ZipFile(directory + filename)
+    z.extractall(directory)
+    st = os.stat(directory + 'chromedriver')
+    os.chmod(directory + 'chromedriver', st.st_mode | stat.S_IEXEC)
+
+chrome_driver = directory + 'chromedriver'
+
+chromeOptions = selenium.webdriver.ChromeOptions()
+prefs = {"download.default_directory" : "$HOME/Desktop"}
+chromeOptions.add_experimental_option("prefs",prefs)
+
+driver = selenium.webdriver.Chrome(executable_path=chrome_driver, chrome_options=chromeOptions)
 driver.get(url + part_ids[0])
 part_soup = BeautifulSoup(driver.page_source)
 # print part_soup.prettify()
@@ -62,3 +82,5 @@ print_btn = WebDriverWait(driver, 10).until(
     EC.element_to_be_clickable((By.ID, "printTool"))
 )
 print_btn.click()
+
+driver.switch_to.window("Untitled")
