@@ -116,6 +116,8 @@ def get_parts(driver, url):
 def get_part_id(tag):
     span = tag.find("span",{'class': 'part-title'})
     num = re.match('(.*?):.*?', span.text, flags=re.I).group(1)
+    if ' ' in num:
+        num = num.split(' ')[-1]
     return num
 
 
@@ -149,6 +151,8 @@ def get_href(tag):
 def get_chapter_id(tag):
     part_label = tag.find('span', attrs={'class':'partLabel'}).text
     num = re.match('(.*?):', part_label, flags=re.I).group(1)
+    if ' ' in num:
+        num = num.split(' ')[-1]
     return num
 
 
@@ -160,13 +164,10 @@ def print_multiple_chapters(driver, base_url, book_name, chapters, filename_pref
         start_num = 0
     elif start_num in chapter_ids:
         start_num = chapter_ids.index(start_num)
-    for j in range(start_num, len(chapters)):
+    for j in range(int(start_num), len(chapters)):
         driver.get(base_url + postfix_urls[j])
-
-        print ("\tDownloading %s : \n\t" % chapter_ids[j] + base_url + postfix_urls[j])
-        if "chapter" not in chapter_ids[j]:
-            chapter_ids[j] = "chapter " + chapter_ids[j]
-        print_single_chapter(driver, book_name, filename_prefix + '_' + chapter_ids[j].lower().replace(' ', '_'))
+        print ("\tDownloading chapter %s : \n\t" % chapter_ids[j] + base_url + postfix_urls[j])
+        print_single_chapter(driver, book_name, filename_prefix + 'chapter_' + chapter_ids[j])
 
 
 def get_latest_file(book_name):
@@ -248,7 +249,7 @@ def main(argv):
             # print("DEBUG: len(chapters) = %i" % len(chapters))
             # resume downloading from last breakpoint
             start_num = chapter_num if i == start_part else 0
-            print_multiple_chapters(driver, base_url, book_name, chapters, part_ids[i].lower().replace(' ', '_'), start_num=start_num)
+            print_multiple_chapters(driver, base_url, book_name, chapters, 'part_' + part_ids[i] + '_', start_num=start_num)
 
 
 if __name__ == "__main__":
