@@ -115,7 +115,7 @@ def get_parts(driver, url):
 
 def get_part_id(tag):
     span = tag.findAll("span",{'class': 'part-title'})[0]
-    num = int(re.match('[a-z]+ ([0-9]+)', span.text, flags=re.I).group(1))
+    num = re.match('[a-z]+ ([a-z0-9]+)', span.text, flags=re.I).group(1)
     return num
 
 
@@ -147,7 +147,7 @@ def get_href(tag):
 
 
 def get_chapter_id(tag):
-    num = int(re.match('chapter ([0-9]+)', tag.text, flags=re.I).group(1))
+    num = re.match('chapter ([a-z0-9]+):', tag.text, flags=re.I).group(1)
     return num
 
 
@@ -162,23 +162,23 @@ def print_multiple_chapters(driver, base_url, chapters, filename_prefix, start_n
     for j in range(start_num, len(chapters)):
         driver.get(base_url + postfix_urls[j])
 
-        print ("\tDownloading Chapter %i : \n\t" % chapter_ids[j] + base_url + postfix_urls[j])
+        print ("\tDownloading Chapter %s : \n\t" % chapter_ids[j] + base_url + postfix_urls[j])
 
-        print_single_chapter(driver, filename_prefix + "chapter_%i" % chapter_ids[j])
+        print_single_chapter(driver, filename_prefix + "chapter_%s" % chapter_ids[j])
 
 
 def get_latest_file():
     part_num = 0
     chapter_num = 0
-    for filename in glob.glob("*chapter_[0-9]*.pdf"):
-        chapter_num = max(int(filename.split('_')[-1].split('.')[0]), chapter_num)
+    for filename in glob.glob("*chapter_*.pdf"):
+        chapter_num = filename.split('_')[-1].split('.')[0]
         if 'part' in filename:
-            part_num = max(int(filename.split('_')[1]), part_num)
+            part_num = filename.split('_')[1]
 
     if chapter_num != 0:
-        latest_file = 'chapter_%i' % chapter_num
+        latest_file = 'chapter_%s' % chapter_num
         if part_num != 0:
-            latest_file = ('part_%i_' % part_num) + latest_file
+            latest_file = ('part_%s_' % part_num) + latest_file
         resume_msg = 'Found %s.pdf in current directory, do you want to resume downloading from here? (Y/N): ' % latest_file
         resume = raw_input(resume_msg)
         if resume.lower() == 'n':
