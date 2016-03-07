@@ -114,8 +114,8 @@ def get_parts(driver, url):
 
 
 def get_part_id(tag):
-    span = tag.findAll("span",{'class': 'part-title'})[0]
-    num = re.match('[a-z]+ ([a-z0-9]+)', span.text, flags=re.I).group(1)
+    span = tag.find("span",{'class': 'part-title'})
+    num = re.match('(.*?):.*?', span.text, flags=re.I).group(1)
     return num
 
 
@@ -135,7 +135,7 @@ def get_chapters(driver, url):
 
     chapter_elements = part_soup.findAll('a', attrs={'href':re.compile("^/*content.aspx")})
     # print("DEBUG In get_chapters: len(chapter_elements) = %i" % len(chapter_elements))
-    chapter_elements = [elem for elem in chapter_elements if 'chapter' in elem.text.lower()]
+    chapter_elements = [elem for elem in chapter_elements if elem.find('span', attrs={'class':'partLabel'})]
     return chapter_elements
 
 
@@ -147,7 +147,8 @@ def get_href(tag):
 
 
 def get_chapter_id(tag):
-    num = re.match('chapter ([a-z0-9]+):', tag.text, flags=re.I).group(1)
+    part_label = tag.find('span', attrs={'class':'partLabel'}).text
+    num = re.match('(.*?):', part_label, flags=re.I).group(1)
     return num
 
 
@@ -162,15 +163,16 @@ def print_multiple_chapters(driver, base_url, chapters, filename_prefix, start_n
     for j in range(start_num, len(chapters)):
         driver.get(base_url + postfix_urls[j])
 
-        print ("\tDownloading Chapter %s : \n\t" % chapter_ids[j] + base_url + postfix_urls[j])
+        print ("\tDownloading %s : \n\t" % chapter_ids[j] + base_url + postfix_urls[j])
+        if "chapter" not in chapter_ids[j]:
+            chapter_ids[j] = "chapter " + chapter_ids[j]
+        print_single_chapter(driver, filename_prefix + chapter_ids[j].lower().replace(' ', '_'))
 
-        print_single_chapter(driver, filename_prefix + "chapter_%s" % chapter_ids[j])
 
-
-def get_latest_file():
+def get_latest_file(book_name):
     part_num = 0
     chapter_num = 0
-    for filename in glob.glob("*chapter_*.pdf"):
+    for filename in glob.glob("./%s/*chapter_*.pdf" % book_name):
         chapter_num = filename.split('_')[-1].split('.')[0]
         if 'part' in filename:
             part_num = filename.split('_')[1]
@@ -221,9 +223,10 @@ def main(argv):
     book_name = get_book_name(driver)
 
     print('Book name: ' + book_name)
-
+    if not os.path.exists("./" + book_name):
+        os.makedirs("./" + book_name)
     # find out breakpoint of last download task
-    (part_num, chapter_num) = get_latest_file()
+    (part_num, chapter_num) = get_latest_file(book_name)
 
     if not parts:
         chapters = get_chapters(driver, url)
@@ -238,14 +241,14 @@ def main(argv):
         elif part_num in part_ids:
             start_part = part_ids.index(part_num)
         for i in range(start_part, len(part_ids)):
-            print ("Downloading Part %i: \n" % part_ids[i] + url + parts[i].get('href'))
+            print ("Downloading Part %s: \n" % part_ids[i] + url + parts[i].get('href'))
             # print part_soup.prettify()
             # print("DEBUG: url + parts[i].get('href') = " + parts[i].get('href'))
             chapters = get_chapters(driver, url + parts[i].get('href'))
             # print("DEBUG: len(chapters) = %i" % len(chapters))
             # resume downloading from last breakpoint
             start_num = chapter_num if i == start_part else 0
-            print_multiple_chapters(driver, base_url, chapters, "part_%i_" % part_ids[i], start_num=start_num)
+            print_multiple_chapters(driver, base_url, chapters, part_ids[i].lower().replace(' ', '_'), start_num=start_num)
 
 
 if __name__ == "__main__":
