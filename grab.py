@@ -18,7 +18,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-def print_single_chapter(driver, filename):
+def print_single_chapter(driver, book_name, filename):
     sign_in(driver)
     # Print chapter
     print_btn = WebDriverWait(driver, 10).until(
@@ -46,7 +46,7 @@ def print_single_chapter(driver, filename):
     # pageFormat = '''this.paperSize = {width: "780px", height: "1000px", margin: "10px"};'''
     pageFormat = '''this.paperSize = {format: "A3", margin: "1cm"};'''
     execute(pageFormat, [])
-    render = 'this.render("{file_name}.pdf")'.format(file_name=filename)
+    render = 'this.render("{file_name}.pdf")'.format(file_name="./" + book_name + "/" + filename)
     execute(render, [])
     print "\tSaved as %s.pdf" % filename
 
@@ -152,7 +152,7 @@ def get_chapter_id(tag):
     return num
 
 
-def print_multiple_chapters(driver, base_url, chapters, filename_prefix, start_num=0):
+def print_multiple_chapters(driver, base_url, book_name, chapters, filename_prefix, start_num=0):
     chapter_ids = [get_chapter_id(chapter) for chapter in chapters]
     # print("DEBUG: In print_multiple_chapters, len(chapter_ids) = %i" % len(chapter_ids))
     postfix_urls = [get_href(chapter) for chapter in chapters]
@@ -166,7 +166,7 @@ def print_multiple_chapters(driver, base_url, chapters, filename_prefix, start_n
         print ("\tDownloading %s : \n\t" % chapter_ids[j] + base_url + postfix_urls[j])
         if "chapter" not in chapter_ids[j]:
             chapter_ids[j] = "chapter " + chapter_ids[j]
-        print_single_chapter(driver, filename_prefix + chapter_ids[j].lower().replace(' ', '_'))
+        print_single_chapter(driver, book_name, filename_prefix + '_' + chapter_ids[j].lower().replace(' ', '_'))
 
 
 def get_latest_file(book_name):
@@ -248,7 +248,7 @@ def main(argv):
             # print("DEBUG: len(chapters) = %i" % len(chapters))
             # resume downloading from last breakpoint
             start_num = chapter_num if i == start_part else 0
-            print_multiple_chapters(driver, base_url, chapters, part_ids[i].lower().replace(' ', '_'), start_num=start_num)
+            print_multiple_chapters(driver, base_url, book_name, chapters, part_ids[i].lower().replace(' ', '_'), start_num=start_num)
 
 
 if __name__ == "__main__":
