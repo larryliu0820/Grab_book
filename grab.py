@@ -6,6 +6,7 @@ import sys
 import glob
 import time
 import stat
+import string
 import urllib2
 import zipfile
 import getpass
@@ -126,18 +127,20 @@ def get_chapters(driver, url):
     driver.get(url)
     part_soup = BeautifulSoup(driver.page_source)
 
-    while part_soup.findAll('div', attrs={'class': 'top-part'}):
+    while part_soup.find('div', attrs={'class': 'top-part'}):
         # print "DEBUG: get url"
-        if part_soup.findAll('li', attrs={'class': 'subpart-chapter'}):
+        if part_soup.find('li', attrs={'class': 'subpart-chapter'}):
             # print "DEBUG: satisfied!"
             break
         driver.get(url)
         time.sleep(1)
         part_soup = BeautifulSoup(driver.page_source)
 
-    chapter_elements = part_soup.findAll('a', attrs={'href':re.compile("^/*content.aspx")})
+    chapter_li = part_soup.findAll('li', attrs={'class': 'subpart-chapter'})
+    if not chapter_li:
+        chapter_li = part_soup.findAll('li', attrs={'class': 'top-chap'})
+    chapter_elements = [li.find('a', attrs={'href':re.compile("^/*content.aspx")}) for li in chapter_li]
     # print("DEBUG In get_chapters: len(chapter_elements) = %i" % len(chapter_elements))
-    chapter_elements = [elem for elem in chapter_elements if elem.find('span', attrs={'class':'partLabel'})]
     return chapter_elements
 
 
@@ -149,8 +152,7 @@ def get_href(tag):
 
 
 def get_chapter_id(tag):
-    part_label = tag.find('span', attrs={'class':'partLabel'}).text
-    num = re.match('(.*?)[:|.]', part_label, flags=re.I).group(1)
+    num = re.match('(.*?)[:|.]', tag.text, flags=re.I).group(1)
     if ' ' in num:
         num = num.split(' ')[-1]
     return num
@@ -195,7 +197,8 @@ def get_book_name(driver):
     soup = BeautifulSoup(driver.page_source)
     header = soup.findAll("header", {'class': 'page-header'})[0]
     book_name = HTMLParser.HTMLParser().unescape(header.findAll('h1')[0].text)
-    return book_name
+    printable = set(string.printable)
+    return filter(lambda x: x in printable, book_name)
 
 
 def click_expand_all(driver):
@@ -234,7 +237,7 @@ def main(argv):
         if not chapters:
             print('Error: unable to find chapters in this page.')
             sys.exit(1)
-        print_multiple_chapters(driver, base_url, chapters, "", start_num=chapter_num)
+        print_multiple_chapters(driver, base_url, book_name, chapters, "", start_num=chapter_num)
     else:
         part_ids = [get_part_id(part) for part in parts]
         if part_num < part_ids[0]:
