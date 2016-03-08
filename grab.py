@@ -115,7 +115,7 @@ def get_parts(driver, url):
 
 def get_part_id(tag):
     span = tag.find("span",{'class': 'part-title'})
-    num = re.match('(.*?):.*?', span.text, flags=re.I).group(1)
+    num = re.match('(.*?)[:|.]', span.text, flags=re.I).group(1)
     if ' ' in num:
         num = num.split(' ')[-1]
     return num
@@ -150,7 +150,7 @@ def get_href(tag):
 
 def get_chapter_id(tag):
     part_label = tag.find('span', attrs={'class':'partLabel'}).text
-    num = re.match('(.*?):', part_label, flags=re.I).group(1)
+    num = re.match('(.*?)[:|.]', part_label, flags=re.I).group(1)
     if ' ' in num:
         num = num.split(' ')[-1]
     return num
@@ -250,6 +250,8 @@ def main(argv):
             # resume downloading from last breakpoint
             start_num = chapter_num if i == start_part else 0
             print_multiple_chapters(driver, base_url, book_name, chapters, 'part_' + part_ids[i] + '_', start_num=start_num)
+
+    print "Successfully Got all chapters!"
 
 
 if __name__ == "__main__":
